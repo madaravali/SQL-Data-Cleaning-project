@@ -1,0 +1,56 @@
+=> Create table 
+CREATE TABLE emp_sal LIKE employee_salary;
+// this creates only tables with headings 
+
+=> Insert values into the table
+INSERT emp_sal
+SELECT* FROM employee_salary;
+//inserts all rows from employees salary into emp_sal
+
+=> Removing duplicates 
+SELECT *, ROW_NUMBER() OVER(PARTITION BY employee_id, first_name, last_name, occupation, salary, dept_id) as row_num FROM emp_sal;
+//this prints table with all columns and row number as 1 if the entry is unique or if greater than one then it has duplicates 
+
+WITH CTE as(
+SELECT *, ROW_NUMBER() OVER(PARTITION BY employee_id, first_name, last_name, occupation, salary, dept_id) as row_num FROM emp_sal)
+DELETE FROM CTE WHERE row_num > 1;
+// deletes all the duplicates from table;
+if MYsql throws error for deletion and updation we can create another table and delete rows using another table or use SET SQL_SAFE_UPDATES = 0;
+
+=> Creating another table for deleting duplicates 
+CREATE TABLE emp_sal3(
+`employee_id` text,
+`first_name` text,
+`last_name` text,
+`occupation` text,
+`salary` text,
+`dept_id` int,
+`row_num` int);
+//creates new table emp_sal3 with following columns 
+
+=> insert values from employee_salary table and row_num of corresponding rows in the table 
+INSERT INTO emp_sal3
+SELECT *, ROW_NUMBER() OVER(PARTITION BY employee_id, first_name, last_name, occupation, salary, dept_id) as row_num FROM emp_sal;
+
+=> delete records in emp_sal3 where row number os greater than 1
+for duplicates 
+DELETE FROM emp_sal3 WHERE row_num > 1
+
+=> Standardizing data
+UPDATE emp_sal3 SET last_name = TRIM(TRAILING '.' FROM last_name) WHERE first_name = 'Jerry';
+// removes . from last name at the end
+
+=> Removing null values 
+SELECT * FROM emp_sal3 s1 JOIN emp_sal3 s2 ON s1.first_name = s2.first_name WHERE
+(s1.dept_id IS NULL or s1.dept_id = '') AND s2.dept_id IS NOT NULL
+//displays rows with null or empty values
+
+=>Update null to non null values
+UPDATE emp_sal3 s1 JOIN emp_sal3 s2 ON s1.dept_id = s2.dept_id
+SET s1.dept_id = s2.dept_id WHERE (s1.dept_id IS NULL or s1.dept_id = '') AND s2.dept_id IS NOT NULL;
+
+=> Remove unwanted columns and rows
+ALTER TABLE emp_sal3 DROP COLUMN row_num;
+//deletes column with row_num name
+DELETE FROM emp_sal3 WHERE occupation = 'Shoe Shiner and Musicians';
+
